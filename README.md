@@ -13,7 +13,7 @@ IEnumerable for javascript Array
                  { Id: 7, Name: 'Item 7' }];
 
    var query = 
-      source.where('m=>m.Id > 3 && m.Id < 6')
+      source.where('m=>m.Id > 3 &amp;&amp; m.Id &lt; 6')
             .orderByDesc('m=>m.Name');
             
 </pre>
