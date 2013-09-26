@@ -18,3 +18,6 @@ IEnumerable for javascript Array
             .orderByDesc('m=>m.Name');
             
 </pre>
+
+Live Demo
+http://jsfiddle.net/kodingsykosis/hqkES/
