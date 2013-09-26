@@ -12,6 +12,7 @@ IEnumerable for javascript Array
                  { Id: 6, Name: 'Item 6' },
                  { Id: 7, Name: 'Item 7' }];
 
+   // Enjoy :)
    var query = 
       source.where('m=>m.Id > 3 &amp;&amp; m.Id &lt; 6')
             .orderByDesc('m=>m.Name');
