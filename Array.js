@@ -135,3 +135,25 @@ Array.prototype.take = function (count) {
 Array.prototype.skip = function (index) {
     return this.slice(index, this.length);
 };
+
+Array.prototype.select = function (qry) {
+    if (typeof qry === 'undefined') {
+        return this;
+    }
+
+    var query = qry.split('=>');
+    var arg = query.length > 0 ? query[0].trim() : null;
+    var func = query.length > 1 ? query[1].trim() : null;
+
+    if (arg === null || func === null) {
+        throw "Invalid arrow function";
+    }
+
+    var compiled = new Function(arg, 'return (' + func + ');');
+    var results = [];
+    for (var i = 0, len = this.length; i < len; i++) {
+        results.push(compiled(this[i]));
+    }
+
+    return results;
+};
