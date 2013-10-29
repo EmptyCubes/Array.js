@@ -1,102 +1,234 @@
+﻿<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <title>Array.js Example</title>
-
-    <script type="text/javascript" src="http://cdn.kodingsykosis.com/jQuery/1.9.1/jQuery.js"></script>
-	<script type="text/javascript" src="./Array.js"></script>
+    <title>Array Extensions Demo</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="Array.js"></script>
 </head>
     <body>
-        <pre id="output"></pre>
-		<script type="text/javascript">
-			var output = $('#output');
-			var source = [{ Id: 1, Name: 'Item 1' },
-						  { Id: 2, Name: 'Item 2' },
-						  { Id: 3, Name: 'Item 3' },
-						  { Id: 4, Name: 'Item 4' },
-						  { Id: 5, Name: 'Item 5' },
-						  { Id: 6, Name: 'Item 6' },
-						  { Id: 7, Name: 'Item 7' }];
+        <script type="text/javascript">
+            $(document).ready(function () {
+                var output = $('#output');
+                var source = [{ Id: 1, Name: 'Item 1' },
+                    { Id: 2, Name: 'Item 2' },
+                    { Id: 3, Name: 'Item 3' },
+                    { Id: 4, Name: 'Item 4' },
+                    { Id: 5, Name: 'Item 5' },
+                    { Id: 6, Name: 'Item 6' },
+                    { Id: 7, Name: 'Item 7' }];
+                var target = [{ Id: 8, Name: 'Item 8' },
+                    { Id: 9, Name: 'Item 9' },
+                    { Id: 10, Name: 'Item 10' },
+                    { Id: 11, Name: 'Item 11' },
+                    { Id: 12, Name: 'Item 12' },
+                    { Id: 13, Name: 'Item 13' },
+                    { Id: 14, Name: 'Item 14' }];
 
-			//
-			//Where & OrderByDesc
-			//
+                var petOwners = [
+                    { Name: "Higa, Sidney", Pets: ["Scruffy", "Sam"] },
+                    { Name: "Ashkenazi, Ronen", Pets: ["Walker", "Sugar"] },
+                    { Name: "Price, Vernette", Pets: ["Scratches", "Diesel"] }
+                ];
 
-			var query = 
-				source.where('m=>m.Id > 3 && m.Id < 6')
-					  .orderByDesc('m=>m.Name');
+                var duplicates = [{ Id: 8, Name: 'Item 8' },
+                    { Id: 9, Name: 'Item 9' },
+                    { Id: 10, Name: 'Item 10' },
+                    { Id: 10, Name: 'Item 10' }];
 
-			output.append('Where & OrderByDesc\n');
-			$.each(query, function(i,o) {
-				output.append("\tId = " + o.Id + ", Name = " + o.Name + "\n");
-			});
+                //
+                //Where & OrderByDesc
+                //
 
-			//
-			//First
-			//
-
-			output.append('\n\nFirst\n')
-			var o = source.first('m=>m.Id > 3');
-			output.append("\tId = " + o.Id + ", Name = " + o.Name + "\n");
-
-			//
-			//First Exception
-			//
-
-			output.append('\n\nFirst exception.\n')
-			try {
-				o = source.first('m=>m.Id > 7');
-				output.append("\tId = " + o.Id + ", Name = " + o.Name + "\n");
-			} catch(e) {
-				output.append('\t' + e + '\n');
-			}
-
-			//
-			//FirstOrDefault
-			//
-
-			output.append('\n\nFirstOrDefault\n');
-			o = source.firstOrDefault('m=>m.Id == 8');
-			if (o === null) output.append('\tNULL\n');
-			else output.append("\tId = " + o.Id + ", Name = " + o.Name + "\n");
-
-			//
-			//Skip & Take
-			//
-
-			query = source.skip(3)
-						  .take(2);
-
-			output.append('\n\nSkip & Take\n');
-			$.each(query, function(i,o) {
-				output.append("\tId = " + o.Id + ", Name = " + o.Name + "\n");
-			});
-
-			//
-			//Count
-			//
-
-			var i = source.count('m=>m.Id > 4');
-			output.append('\n\nCount\n');
-			output.append('\t' + i);
-
-			//
-			//Any
-			//
-
-			output.append('\n\nAny\n');
-			output.append('\tm.Id > 4 = ' + source.any('m=>m.Id > 4') + '\n');
-			output.append('\tm.Id > 8 = ' + source.any('m=>m.Id > 8') + '\n');
+                var query =
+                    source.where('m=>m.Id > 3 && m.Id < 6')
+                        .orderByDesc('m=>m.Name');
 
 
-			//
-			//Select
-			//
+                output.append('<b>Where & OrderByDesc</b>');
+                output.append("<br />");
+                $.each(query, function (i, o) {
+                    output.append("Id = " + o.Id + ", Name = " + o.Name);
+                    output.append("<br />");
+                });
 
-			output.append('\n\nSelect\n');
-			query = source.select("m=>m.Name");
-			$.each(query, function(i,s) {
-				output.append("\t" + s + "\n");
-			});
-		</script>
+                //
+                //First
+                //
+
+                output.append("<br />");
+                output.append('<b>First</b>');
+                output.append("<br />");
+                var o = source.first('m=>m.Id > 3');
+                output.append("Id = " + o.Id + ", Name = " + o.Name);
+                output.append("<br />");
+
+                //
+                //First Exception
+                //
+
+                output.append("<br />");
+                output.append('<b>First exception.</b>');
+                output.append("<br />");
+                try {
+                    o = source.first('m=>m.Id > 7');
+                    output.append("Id = " + o.Id + ", Name = " + o.Name);
+                } catch (e) {
+                    output.append('' + e);
+                }
+                output.append("<br />");
+
+                //
+                //FirstOrDefault
+                //
+
+                output.append("<br />");
+                output.append('<b>FirstOrDefault</b>');
+                output.append("<br />");
+                o = source.firstOrDefault('m=>m.Id == 8');
+                if (o === null) output.append('NULL');
+                else output.append("Id = " + o.Id + ", Name = " + o.Name);
+                output.append("<br />");
+
+                //
+                //Skip & Take
+                //
+
+                query = source.skip(3)
+                    .take(2);
+
+                output.append("<br />");
+                output.append('<b>Skip & Take</b>');
+                output.append("<br />");
+                $.each(query, function (i, o) {
+                    output.append("Id = " + o.Id + ", Name = " + o.Name);
+                    output.append("<br />");
+                });
+
+                //
+                //Count
+                //
+
+                var i = source.count('m=>m.Id > 4');
+                output.append("<br />");
+                output.append('<b>Count</b>');
+                output.append("<br />");
+                output.append(i);
+                output.append("<br />");
+
+                //
+                //Any
+                //
+
+                output.append("<br />");
+                output.append('<b>Any</b>');
+                output.append("<br />");
+                output.append('m.Id > 4 = ' + source.any('m=>m.Id > 4'));
+                output.append("<br />");
+                output.append('m.Id > 8 = ' + source.any('m=>m.Id > 8'));
+                output.append("<br />");
+
+                //
+                //Select
+                //
+
+                query = petOwners.select('m=>m.Pets');
+
+                output.append("<br />");
+                output.append('<b>Select</b>');
+                output.append("<br />");
+                $.each(query, function (i, o) {
+                    output.append(o.join());
+                    output.append("<br />");
+                });
+                output.append("<br />");
+
+                //
+                //Select Many
+                //
+
+                query = petOwners.selectMany('m=>m.Pets');
+
+                output.append("<br />");
+                output.append('<b>Select Many</b>');
+                output.append("<br />");
+                $.each(query, function (i, o) {
+                    output.append(o);
+                    output.append("<br />");
+                });
+                output.append("<br />");
+
+                //
+                //Union
+                //
+
+                query = source.union(target);
+
+                output.append("<br />");
+                output.append('<b>Union</b>');
+                output.append("<br />");
+                $.each(query, function (i, o) {
+                    output.append("Id = " + o.Id + ", Name = " + o.Name);
+                    output.append("<br />");
+                });
+                output.append("<br />");
+
+                //
+                //Reverse
+                //
+
+                query = source.reverse();
+
+                output.append("<br />");
+                output.append('<b>Reverse</b>');
+                output.append("<br />");
+                $.each(query, function (i, o) {
+                    output.append("Id = " + o.Id + ", Name = " + o.Name);
+                    output.append("<br />");
+                });
+                output.append("<br />");
+
+                //
+                //Max
+                //
+
+                query = source.max('m=>m.Id');
+
+                output.append("<br />");
+                output.append('<b>Max</b>');
+                output.append("<br />");
+                output.append(query);
+                output.append("<br />");
+
+                //
+                //Min
+                //
+
+                query = source.min('m=>m.Id');
+
+                output.append("<br />");
+                output.append('<b>Min</b>');
+                output.append("<br />");
+                output.append(query);
+                output.append("<br />");
+
+                //
+                //Distinct
+                //
+
+                query = duplicates.distinct();
+
+                output.append("<br />");
+                output.append('<b>Distinct</b>');
+                output.append("<br />");
+                $.each(query, function (i, o) {
+                    output.append("Id = " + o.Id + ", Name = " + o.Name);
+                    output.append("<br />");
+                });
+            });
+        </script>
+        <h1>Hello Array.js World!... OMG!</h1>
+        <div><br /></div>
+        <div id="output"></div>
+        <div><br /></div>
     </body>
 </html>
