@@ -119,6 +119,93 @@ Array.prototype.select = function (qry) {
     return results;
 };
 
+Array.prototype.selectMany = function (qry) {
+    if (typeof qry === 'undefined') {
+        return this;
+    }
+
+    var results = this.select(qry);
+    var array = [];
+    for (var i = 0; i < results.length; i++) {
+        array = array.union(results[i]);
+    }
+
+    return array;
+};
+
+Array.prototype.union = function (array) {
+    if (typeof array === 'undefined' || array == null) {
+        return this;
+    }
+
+    var arrayClone = array.slice();
+    arrayClone.splice(0, 0, this.length, 0);
+    
+    var clone = this.slice();
+    clone.splice.apply(clone, arrayClone);
+    
+    return clone;
+};
+
+Array.prototype.reverse = function () {
+    var results = [];
+    for (var i = this.length - 1; i >= 0; i--) {
+        results.push(this[i]);
+    }
+    
+    return results;
+};
+
+Array.prototype.max = function (qry) {
+    var results = this.select(qry);
+    return Math.max.apply(null, results);
+};
+
+Array.prototype.min = function (qry) {
+    var results = this.select(qry);
+    return Math.min.apply(null, results);
+};
+
+Array.prototype.sum = function () {
+    if (this.length == 0)
+        return 0;
+
+    var sum = 0;
+    for (var i = 0; i < this.length; i++)
+        sum += this[i];
+    return sum;
+};
+
+Array.prototype.average = function () {
+    return this.sum() / this.count();
+};
+
+Array.prototype.distinct = function () {
+    if (this.length < 1)
+        return this;
+
+    var sortedResults = this.sort();
+    var results = [];
+    results.push(sortedResults[0]);
+    for (var i = 0, j = 1; j < sortedResults.length; i++, j++) {
+        var prev = sortedResults[i];
+        var curr = sortedResults[j];
+        
+        if (compare(curr, prev) !== 0)
+            results.push(curr);
+    }
+
+    return results;
+};
+
+Array.prototype.innerJoin = function (qry) {
+    return this;
+};
+
+Array.prototype.groupJoin = function (qry) {
+    return this;
+};
+
 window.compileExp = function(exp) {
 	if (typeof exp === 'undefined') {
         throw "Expression is invalid.";
