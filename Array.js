@@ -28,6 +28,7 @@ String.prototype.hashCode = function () {
 
 Array.prototype.where = function (qry) {
     var results = [];
+<<<<<<< HEAD
     var query = qry.split('=>');
     var arg = query.length > 0 ? query[0].trim() : null;
     var func = query.length > 1 ? query[1].trim() : null;
@@ -38,9 +39,13 @@ Array.prototype.where = function (qry) {
 
     var compiled = new Function(arg, 'return (' + func + ') === true;');
 
+=======
+	var compiled = window.compileExp(qry);
+ 
+>>>>>>> upstream/master
     for (var i = 0, len = this.length; i < len; i++) {
         var item = this[i];
-        if (compiled(item)) {
+        if (compiled(item) === true) {
             results.push(item);
         }
     }
@@ -88,6 +93,7 @@ Array.prototype.orderBy = function (qry) {
     if (typeof qry === 'undefined') {
         return this.sort();
     }
+<<<<<<< HEAD
 
     var query = qry.split('=>');
     var arg = query.length > 0 ? query[0].trim() : null;
@@ -114,6 +120,14 @@ Array.prototype.orderBy = function (qry) {
     };
 
     return this.sort(sortFn);
+=======
+ 
+	var compiled = window.compileExp(qry);
+	
+    return this.sort(function(a,b) {
+		return window.compare(compiled(a), compiled(b));
+	});
+>>>>>>> upstream/master
 };
 
 Array.prototype.orderByDesc = function (qry) {
@@ -125,11 +139,7 @@ Array.prototype.orderByDesc = function (qry) {
 };
 
 Array.prototype.take = function (count) {
-    var results = [];
-    for (var i = 0, len = this.length; i < len && i < count; i++) {
-        results.push(this[i]);
-    }
-    return results;
+	return this.slice(0, count);
 };
 
 Array.prototype.skip = function (index) {
@@ -141,16 +151,9 @@ Array.prototype.select = function (qry) {
         return this;
     }
 
-    var query = qry.split('=>');
-    var arg = query.length > 0 ? query[0].trim() : null;
-    var func = query.length > 1 ? query[1].trim() : null;
-
-    if (arg === null || func === null) {
-        throw "Invalid arrow function";
-    }
-
-    var compiled = new Function(arg, 'return (' + func + ');');
+	var compiled = window.compileExp(qry);
     var results = [];
+	
     for (var i = 0, len = this.length; i < len; i++) {
         results.push(compiled(this[i]));
     }
@@ -230,6 +233,86 @@ Array.prototype.distinct = function () {
         var prev = sortedResults[i];
         var curr = sortedResults[j];
         
+        if (compare(curr, prev) !== 0)
+            results.push(curr);
+    }
+
+    return results;
+};
+
+<<<<<<< HEAD
+Array.prototype.selectMany = function (qry) {
+    if (typeof qry === 'undefined') {
+        return this;
+    }
+
+    var results = this.select(qry);
+    var array = [];
+    for (var i = 0; i < results.length; i++) {
+        array = array.union(results[i]);
+    }
+
+    return array;
+};
+
+Array.prototype.union = function (array) {
+    if (typeof array === 'undefined' || array == null) {
+        return this;
+    }
+
+    var arrayClone = array.slice();
+    arrayClone.splice(0, 0, this.length, 0);
+    
+    var clone = this.slice();
+    clone.splice.apply(clone, arrayClone);
+    
+    return clone;
+};
+
+Array.prototype.reverse = function () {
+    var results = [];
+    for (var i = this.length - 1; i >= 0; i--) {
+        results.push(this[i]);
+    }
+    
+    return results;
+};
+
+Array.prototype.max = function (qry) {
+    var results = this.select(qry);
+    return Math.max.apply(null, results);
+};
+
+Array.prototype.min = function (qry) {
+    var results = this.select(qry);
+    return Math.min.apply(null, results);
+};
+
+Array.prototype.sum = function () {
+    if (this.length == 0)
+        return 0;
+
+    var sum = 0;
+    for (var i = 0; i < this.length; i++)
+        sum += this[i];
+    return sum;
+};
+
+Array.prototype.average = function () {
+    return this.sum() / this.count();
+};
+
+Array.prototype.distinct = function () {
+    if (this.length < 1)
+        return this;
+
+    var sortedResults = this.sort();
+    var results = [];
+    results.push(sortedResults[0]);
+    for (var i = 0, j = 1; j < sortedResults.length; i++, j++) {
+        var prev = sortedResults[i];
+        var curr = sortedResults[j];
+        
         if (!(equals(curr, prev)))
             results.push(curr);
     }
@@ -237,6 +320,8 @@ Array.prototype.distinct = function () {
     return results;
 };
 
+=======
+>>>>>>> upstream/master
 Array.prototype.innerJoin = function (qry) {
     return this;
 };
@@ -245,6 +330,7 @@ Array.prototype.groupJoin = function (qry) {
     return this;
 };
 
+<<<<<<< HEAD
 function compare(obj, compareTo) {
     if (!compareTo || obj.length != compareTo.length) {
         return false;
@@ -259,3 +345,68 @@ function compare(obj, compareTo) {
 
 
 
+=======
+window.compileExp = function(exp) {
+	if (typeof exp === 'undefined') {
+        throw "Expression is invalid.";
+    }
+
+	var parts = exp.split('=>');
+    var arg = parts.length > 0 ? parts[0].trim() : null;
+    var func = parts.length > 1 ? parts[1].trim() : null;
+ 
+    if (arg === null || func === null) {
+        throw "Expression is invalid.";
+    }
+ 
+    return new Function(arg, 'return (' + func + ');');
+};
+
+window.compare = function(obj1, obj2) {
+	if (typeof obj1 === 'undefined' || typeof obj2 === 'undefined') {
+		return typeof obj1 === 'undefined' ? -1 : (typeof obj2 === 'undefined' ? 1 : 0);
+	}
+
+	if (typeof obj1 !== typeof obj2) {
+		throw "Both objects must be of the same type";
+	}
+
+	if (obj1.compare) {
+		return obj1.compare(obj2);
+	}
+	
+	if (typeof obj1 === 'string') {
+		var hash1 = obj1.hashCode();
+		var hash2 = obj2.hashCode();
+		
+		return hash1 < hash2 ? -1 : (hash1 > hash2 ? 1 : 0);
+	}
+	
+	if (typeof obj1 === 'number') {
+		return obj1 < obj2 ? -1 : (obj1 > obj2 ? 1 : 0);
+	}
+	
+	if (typeof obj1 === 'boolean') {
+		return obj1 === obj2 ? 0 : (obj1 ? 1 : -1);
+	}
+	
+	if (typeof obj1 === 'function') {
+		var val1 = obj1();
+		var val2 = obj2();
+		
+		return window.compare(val1, val2);
+	}
+	
+	if (typeof obj1 === 'object') {
+		var result = 0;
+		for(key in obj1) {
+			var temp = window.compare(obj1[key], obj2[key]);
+			if (temp == -1) return temp;
+			result = Math.max(result, temp);
+		}
+		return result;
+	}
+	
+	throw "Unable to compare objects";
+};
+>>>>>>> upstream/master
