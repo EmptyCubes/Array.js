@@ -23,6 +23,13 @@
                     { Id: 12, Name: 'Item 12' },
                     { Id: 13, Name: 'Item 13' },
                     { Id: 14, Name: 'Item 14' }];
+                var child = [{ Id: 1, Name: 'Item 8' },
+                    { Id: 2, Name: 'Item 9' },
+                    { Id: 3, Name: 'Item 10' },
+                    { Id: 4, Name: 'Item 11' },
+                    { Id: 5, Name: 'Item 12' },
+                    { Id: 6, Name: 'Item 13' },
+                    { Id: 7, Name: 'Item 14' }];
 
                 var petOwners = [
                     { Name: "Higa, Sidney", Pets: ["Scruffy", "Sam"] },
@@ -222,6 +229,37 @@
                 output.append("<br />");
                 $.each(query, function (i, o) {
                     output.append("Id = " + o.Id + ", Name = " + o.Name);
+                    output.append("<br />");
+                });
+				
+				//
+                //Zip
+                //
+                
+                var numbers = [ 1, 2, 3, 4 ];
+                var words = [ "one", "two", "three" ];
+
+                var numbersAndWords = numbers.zip(words, '(first, second) => first + " " + second');
+
+                output.append("<br />");
+                output.append('<b>Zip</b>');
+                output.append("<br />");
+                $.each(numbersAndWords, function (i, o) {
+                    output.append(o);
+                    output.append("<br />");
+                });
+				
+				//
+                //InnerJoin
+                //
+
+                var joined = source.innerJoin(child, 'm=>m.Id', 'm=>m.Id', '(source, child) => source.Name + " - " + child.Name');
+
+                output.append("<br />");
+                output.append('<b>InnerJoin</b>');
+                output.append("<br />");
+                $.each(joined, function (i, o) {
+                    output.append(o);
                     output.append("<br />");
                 });
             });

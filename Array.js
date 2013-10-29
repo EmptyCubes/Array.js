@@ -28,7 +28,9 @@ String.prototype.hashCode = function () {
  
 Array.prototype.where = function (qry) {
     var results = [];
-	var compiled = window.compileExp(qry);
+	var compiled = typeof qry === 'function'
+		? qry
+		: window.compileExp(qry);
  
     for (var i = 0, len = this.length; i < len; i++) {
         var item = this[i];
@@ -198,13 +200,59 @@ Array.prototype.distinct = function () {
     return results;
 };
 
-Array.prototype.innerJoin = function (qry) {
-    return this;
-};
 
-Array.prototype.groupJoin = function (qry) {
-    return this;
-};
+Array.prototype.innerJoin = 
+	function(inner, outerKey, innerKey, zipFn) {
+		var iKey = window.compileExp(innerKey);
+		var oKey = window.compileExp(outerKey);
+		var results = [];
+		
+		for(var i = 0; i < this.length; i++) {
+			var outerItem = this[i];
+			var matches = inner.where(function(item){
+				return window.compare(oKey(outerItem), iKey(item)) == 0;
+			});
+			
+			for(var x = 0; x < matches.length; x++)
+				results.push(matches[x]);
+		}
+		
+		return this.zip(results, zipFn);
+	}
+	
+Array.prototype.groupJoin = 
+	function(inner, outerKey, innerKey, zipFn) {
+		var iKey = window.compileExp(innerKey);
+		var oKey = window.compileExp(outerKey);
+		var results = [];
+		
+		for(var i = 0; i < this.length; i++) {
+			var outerItem = this[i];
+			var matches = inner.where(function(item){
+				return window.compare(oKey(outerItem), iKey(item)) == 0;
+			});
+			
+			results.push(matches);
+		}
+		
+		return this.zip(results, zipFn);
+	}
+
+Array.prototype.zip = 
+	function(second, zipFn) {
+		var results = [];
+		
+		if (typeof zipFn !== 'function') {
+			zipFn = window.compileExp(zipFn);
+		}
+		
+		for(var i = 0; i < this.length; i++) {
+			if (second.length > i)
+				results.push(zipFn(this[i], second[i]));
+		}
+		
+		return results;
+	}
 
 window.compileExp = function(exp) {
 	if (typeof exp === 'undefined') {
@@ -212,7 +260,7 @@ window.compileExp = function(exp) {
     }
 
 	var parts = exp.split('=>');
-    var arg = parts.length > 0 ? parts[0].trim() : null;
+    var arg = parts.length > 0 ? parts[0].trim().replace(/\(|\)/g, '') : null;
     var func = parts.length > 1 ? parts[1].trim() : null;
  
     if (arg === null || func === null) {
