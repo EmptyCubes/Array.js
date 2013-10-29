@@ -28,19 +28,11 @@ String.prototype.hashCode = function () {
  
 Array.prototype.where = function (qry) {
     var results = [];
-    var query = qry.split('=>');
-    var arg = query.length > 0 ? query[0].trim() : null;
-    var func = query.length > 1 ? query[1].trim() : null;
- 
-    if (arg === null || func === null) {
-        throw "Invalid arrow function";
-    }
- 
-    var compiled = new Function(arg, 'return (' + func + ') === true;');
+	var compiled = window.compileExp(qry);
  
     for (var i = 0, len = this.length; i < len; i++) {
         var item = this[i];
-        if (compiled(item)) {
+        if (compiled(item) === true) {
             results.push(item);
         }
     }
@@ -89,31 +81,11 @@ Array.prototype.orderBy = function (qry) {
         return this.sort();
     }
  
-    var query = qry.split('=>');
-    var arg = query.length > 0 ? query[0].trim() : null;
-    var func = query.length > 1 ? query[1].trim() : null;
- 
-    if (arg === null || func === null) {
-        throw "Invalid arrow function";
-    }
- 
-    var compiled = new Function(arg, 'return (' + func + ');');
-    var sortFn = function (a, b) {
-        var valA = compiled(a);
-        var valB = compiled(b);
- 
-        if (typeof valA === 'string') {
-            valA = valA.hashCode();
-        }
- 
-        if (typeof valB === 'string') {
-            valB = valB.hashCode();
-        }
- 
-        return valA < valB ? -1 : (valA > valB ? 1 : 0);
-    };
- 
-    return this.sort(sortFn);
+	var compiled = window.compileExp(qry);
+	
+    return this.sort(function(a,b) {
+		return window.compare(compiled(a), compiled(b));
+	});
 };
  
 Array.prototype.orderByDesc = function (qry) {
@@ -125,11 +97,7 @@ Array.prototype.orderByDesc = function (qry) {
 };
  
 Array.prototype.take = function (count) {
-    var results = [];
-    for (var i = 0, len = this.length; i < len && i < count; i++) {
-        results.push(this[i]);
-    }
-    return results;
+	return this.slice(0, count);
 };
  
 Array.prototype.skip = function (index) {
@@ -141,16 +109,9 @@ Array.prototype.select = function (qry) {
         return this;
     }
 
-    var query = qry.split('=>');
-    var arg = query.length > 0 ? query[0].trim() : null;
-    var func = query.length > 1 ? query[1].trim() : null;
-
-    if (arg === null || func === null) {
-        throw "Invalid arrow function";
-    }
-
-    var compiled = new Function(arg, 'return (' + func + ');');
+	var compiled = window.compileExp(qry);
     var results = [];
+	
     for (var i = 0, len = this.length; i < len; i++) {
         results.push(compiled(this[i]));
     }
@@ -158,9 +119,25 @@ Array.prototype.select = function (qry) {
     return results;
 };
 
+window.compileExp = function(exp) {
+	if (typeof exp === 'undefined') {
+        throw "Expression is invalid.";
+    }
+
+	var parts = exp.split('=>');
+    var arg = parts.length > 0 ? parts[0].trim() : null;
+    var func = parts.length > 1 ? parts[1].trim() : null;
+ 
+    if (arg === null || func === null) {
+        throw "Expression is invalid.";
+    }
+ 
+    return new Function(arg, 'return (' + func + ');');
+};
+
 window.compare = function(obj1, obj2) {
 	if (typeof obj1 === 'undefined' || typeof obj2 === 'undefined') {
-		return obj1 === 'undefined' ? -1 : (typeof obj2 === 'undefined' ? 1 : 0);
+		return typeof obj1 === 'undefined' ? -1 : (typeof obj2 === 'undefined' ? 1 : 0);
 	}
 
 	if (typeof obj1 !== typeof obj2) {
@@ -183,7 +160,7 @@ window.compare = function(obj1, obj2) {
 	}
 	
 	if (typeof obj1 === 'boolean') {
-		return obj1 === obj2 ? 0 (obj1 === true ? 1 : -1);
+		return obj1 === obj2 ? 0 : (obj1 ? 1 : -1);
 	}
 	
 	if (typeof obj1 === 'function') {
