@@ -157,3 +157,51 @@ Array.prototype.select = function (qry) {
 
     return results;
 };
+
+window.compare = function(obj1, obj2) {
+	if (typeof obj1 === 'undefined' || typeof obj2 === 'undefined') {
+		return obj1 === 'undefined' ? -1 : (typeof obj2 === 'undefined' ? 1 : 0);
+	}
+
+	if (typeof obj1 !== typeof obj2) {
+		throw "Both objects must be of the same type";
+	}
+
+	if (obj1.compare) {
+		return obj1.compare(obj2);
+	}
+	
+	if (typeof obj1 === 'string') {
+		var hash1 = obj1.hashCode();
+		var hash2 = obj2.hashCode();
+		
+		return hash1 < hash2 ? -1 : (hash1 > hash2 ? 1 : 0);
+	}
+	
+	if (typeof obj1 === 'number') {
+		return obj1 < obj2 ? -1 : (obj1 > obj2 ? 1 : 0);
+	}
+	
+	if (typeof obj1 === 'boolean') {
+		return obj1 === obj2 ? 0 (obj1 === true ? 1 : -1);
+	}
+	
+	if (typeof obj1 === 'function') {
+		var val1 = obj1();
+		var val2 = obj2();
+		
+		return window.compare(val1, val2);
+	}
+	
+	if (typeof obj1 === 'object') {
+		var result = 0;
+		for(key in obj1) {
+			var temp = window.compare(obj1[key], obj2[key]);
+			if (temp == -1) return temp;
+			result = Math.max(result, temp);
+		}
+		return result;
+	}
+	
+	throw "Unable to compare objects";
+};
