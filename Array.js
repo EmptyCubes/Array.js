@@ -30,7 +30,7 @@ Array.prototype.where = function (qry) {
     var results = [];
 	var compiled = typeof qry === 'function'
 		? qry
-		: window.compileExp(qry);
+		: compileExp(qry);
  
     for (var i = 0, len = this.length; i < len; i++) {
         var item = this[i];
@@ -83,10 +83,10 @@ Array.prototype.orderBy = function (qry) {
         return this.sort();
     }
  
-	var compiled = window.compileExp(qry);
+	var compiled = compileExp(qry);
 	
     return this.sort(function(a,b) {
-		return window.compare(compiled(a), compiled(b));
+		return compare(compiled(a), compiled(b));
 	});
 };
  
@@ -111,7 +111,7 @@ Array.prototype.select = function (qry) {
         return this;
     }
 
-	var compiled = window.compileExp(qry);
+	var compiled = compileExp(qry);
     var results = [];
 	
     for (var i = 0, len = this.length; i < len; i++) {
@@ -203,14 +203,14 @@ Array.prototype.distinct = function () {
 
 Array.prototype.innerJoin = 
 	function(inner, outerKey, innerKey, zipFn) {
-		var iKey = window.compileExp(innerKey);
-		var oKey = window.compileExp(outerKey);
+		var iKey = compileExp(innerKey);
+		var oKey = compileExp(outerKey);
 		var results = [];
 		
 		for(var i = 0; i < this.length; i++) {
 			var outerItem = this[i];
 			var matches = inner.where(function(item){
-				return window.compare(oKey(outerItem), iKey(item)) == 0;
+				return compare(oKey(outerItem), iKey(item)) == 0;
 			});
 			
 			for(var x = 0; x < matches.length; x++)
@@ -222,14 +222,14 @@ Array.prototype.innerJoin =
 	
 Array.prototype.groupJoin = 
 	function(inner, outerKey, innerKey, zipFn) {
-		var iKey = window.compileExp(innerKey);
-		var oKey = window.compileExp(outerKey);
+		var iKey = compileExp(innerKey);
+		var oKey = compileExp(outerKey);
 		var results = [];
 		
 		for(var i = 0; i < this.length; i++) {
 			var outerItem = this[i];
 			var matches = inner.where(function(item){
-				return window.compare(oKey(outerItem), iKey(item)) == 0;
+				return compare(oKey(outerItem), iKey(item)) == 0;
 			});
 			
 			results.push(matches);
@@ -243,7 +243,7 @@ Array.prototype.zip =
 		var results = [];
 		
 		if (typeof zipFn !== 'function') {
-			zipFn = window.compileExp(zipFn);
+			zipFn = compileExp(zipFn);
 		}
 		
 		for(var i = 0; i < this.length; i++) {
@@ -254,7 +254,7 @@ Array.prototype.zip =
 		return results;
 	}
 
-window.compileExp = function(exp) {
+compileExp = function(exp) {
 	if (typeof exp === 'undefined') {
         throw "Expression is invalid.";
     }
@@ -270,7 +270,7 @@ window.compileExp = function(exp) {
     return new Function(arg, 'return (' + func + ');');
 };
 
-window.compare = function(obj1, obj2) {
+compare = function(obj1, obj2) {
 	if (typeof obj1 === 'undefined' || typeof obj2 === 'undefined') {
 		return typeof obj1 === 'undefined' ? -1 : (typeof obj2 === 'undefined' ? 1 : 0);
 	}
@@ -302,13 +302,13 @@ window.compare = function(obj1, obj2) {
 		var val1 = obj1();
 		var val2 = obj2();
 		
-		return window.compare(val1, val2);
+		return compare(val1, val2);
 	}
 	
 	if (typeof obj1 === 'object') {
 		var result = 0;
 		for(key in obj1) {
-			var temp = window.compare(obj1[key], obj2[key]);
+			var temp = compare(obj1[key], obj2[key]);
 			if (temp == -1) return temp;
 			result = Math.max(result, temp);
 		}
