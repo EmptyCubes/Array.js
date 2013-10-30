@@ -1,4 +1,4 @@
-﻿/************************
+/************************
  * Provides IEnumerable for the js Array
  * 
  *
@@ -28,7 +28,9 @@ String.prototype.hashCode = function () {
  
 Array.prototype.where = function (qry) {
     var results = [];
-	var compiled = window.compileExp(qry);
+	var compiled = typeof qry === 'function'
+		? qry
+		: compileExp(qry);
  
     for (var i = 0, len = this.length; i < len; i++) {
         var item = this[i];
@@ -81,10 +83,10 @@ Array.prototype.orderBy = function (qry) {
         return this.sort();
     }
  
-	var compiled = window.compileExp(qry);
+	var compiled = compileExp(qry);
 	
     return this.sort(function(a,b) {
-		return window.compare(compiled(a), compiled(b));
+		return compare(compiled(a), compiled(b));
 	});
 };
  
@@ -109,7 +111,7 @@ Array.prototype.select = function (qry) {
         return this;
     }
 
-	var compiled = window.compileExp(qry);
+	var compiled = compileExp(qry);
     var results = [];
 	
     for (var i = 0, len = this.length; i < len; i++) {
@@ -198,21 +200,67 @@ Array.prototype.distinct = function () {
     return results;
 };
 
-Array.prototype.innerJoin = function (qry) {
-    return this;
-};
 
-Array.prototype.groupJoin = function (qry) {
-    return this;
-};
+Array.prototype.innerJoin = 
+	function(inner, outerKey, innerKey, zipFn) {
+		var iKey = compileExp(innerKey);
+		var oKey = compileExp(outerKey);
+		var results = [];
+		
+		for(var i = 0; i < this.length; i++) {
+			var outerItem = this[i];
+			var matches = inner.where(function(item){
+				return compare(oKey(outerItem), iKey(item)) == 0;
+			});
+			
+			for(var x = 0; x < matches.length; x++)
+				results.push(matches[x]);
+		}
+		
+		return this.zip(results, zipFn);
+	}
+	
+Array.prototype.groupJoin = 
+	function(inner, outerKey, innerKey, zipFn) {
+		var iKey = compileExp(innerKey);
+		var oKey = compileExp(outerKey);
+		var results = [];
+		
+		for(var i = 0; i < this.length; i++) {
+			var outerItem = this[i];
+			var matches = inner.where(function(item){
+				return compare(oKey(outerItem), iKey(item)) == 0;
+			});
+			
+			results.push(matches);
+		}
+		
+		return this.zip(results, zipFn);
+	}
 
-window.compileExp = function(exp) {
+Array.prototype.zip = 
+	function(second, zipFn) {
+		var results = [];
+		
+		if (typeof zipFn !== 'function') {
+			zipFn = compileExp(zipFn);
+		}
+		
+		for(var i = 0; i < this.length; i++) {
+			if (second.length > i)
+				results.push(zipFn(this[i], second[i]));
+		}
+		
+		return results;
+	}
+
+compileExp = function(exp) {
 	if (typeof exp === 'undefined') {
         throw "Expression is invalid.";
     }
 
 	var parts = exp.split('=>');
-    var arg = parts.length > 0 ? parts[0].trim() : null;
+    var arg = parts.length > 0 ? parts[0].trim().replace(/\(|\)/g, '') : null;
     var func = parts.length > 1 ? parts[1].trim() : null;
  
     if (arg === null || func === null) {
@@ -222,7 +270,7 @@ window.compileExp = function(exp) {
     return new Function(arg, 'return (' + func + ');');
 };
 
-window.compare = function(obj1, obj2) {
+compare = function(obj1, obj2) {
 	if (typeof obj1 === 'undefined' || typeof obj2 === 'undefined') {
 		return typeof obj1 === 'undefined' ? -1 : (typeof obj2 === 'undefined' ? 1 : 0);
 	}
@@ -254,13 +302,13 @@ window.compare = function(obj1, obj2) {
 		var val1 = obj1();
 		var val2 = obj2();
 		
-		return window.compare(val1, val2);
+		return compare(val1, val2);
 	}
 	
 	if (typeof obj1 === 'object') {
 		var result = 0;
 		for(key in obj1) {
-			var temp = window.compare(obj1[key], obj2[key]);
+			var temp = compare(obj1[key], obj2[key]);
 			if (temp == -1) return temp;
 			result = Math.max(result, temp);
 		}
