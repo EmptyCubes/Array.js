@@ -400,7 +400,7 @@
         if (typeof array === 'undefined' || array === null)
             return this;
 
-        return this.concat(array).distinct();
+        return this.concat(array);
     };
 
     array.prototype.where = function (qry) {
