@@ -6,486 +6,476 @@
  * https://github.com/KodingSykosis
  * https://github.com/OhRyanOh
  ***/
-(function(array, string, exports) {
-    //From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/Trim
-    if (!string.prototype.trim) {
-        string.prototype.trim = function () {
-            return this.replace(/^\s+|\s+$/g, '');
-        };
-    }
 
-    //From http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
-    string.prototype.hashCode = function () {
-        var hash = 0, i, char;
-        if (this.length === 0) return hash;
-        for (var i = 0, l = this.length; i < l; i++) {
-            char = this.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash |= 0; // Convert to 32bit integer
-        }
-        return hash;
-    };
+// Array Linq like extensions where they make sense:
+// http://msdn.microsoft.com/en-us/library/system.linq.enumerable_methods(v=vs.110).aspx
 
-    //Polyfill from
-    //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
-    if (!array.prototype.forEach) {
-      array.prototype.forEach = function(fun /*, thisArg */) {
-        "use strict";
+Array.prototype.aggregate = function (func) {
+    if (this.length === 0)
+        return null;
 
-        if (this === void 0 || this === null)
-          throw new TypeError();
-
-        var t = Object(this);
-        var len = t.length >>> 0;
-        if (typeof fun !== "function")
-          throw new TypeError();
-
-        var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-        for (var i = 0; i < len; i++) {
-          if (i in t)
-            fun.call(thisArg, t[i], i, t);
-        }
-      };
-    }
-
-    // Array Linq like extensions where they make sense:
-    // http://msdn.microsoft.com/en-us/library/system.linq.enumerable_methods(v=vs.110).aspx
-
-    array.prototype.aggregate = function (func) {
-        if (this.length === 0)
-            return null;
-
+    var aggregateValue = this[0],
         func = compileExp(func);
-        var aggregateValue = this[0];
-        for (var i = 1, len = this.length; i < len; i++)
-            aggregateValue = func(aggregateValue, this[i]);
-        return aggregateValue;
-    };
 
-    array.prototype.all = function (qry) {
-        var results = typeof qry === 'undefined'
-            ? this
-            : this.where(qry);
+    for (var i = 1, len = this.length; i < len; i++)
+        aggregateValue = func(aggregateValue, this[i]);
 
-        return results.length === this.count();
-    };
+    return aggregateValue;
+};
 
-    array.prototype.any = function (qry) {
-        var results = typeof qry === 'undefined'
-            ? this
-            : this.where(qry);
+Array.prototype.all = function (qry) {
+    var results = typeof qry === 'undefined'
+        ? this
+        : this.where(qry);
 
-        return results.length > 0;
-    };
+    return results.length === this.count();
+};
 
-    array.prototype.average = function () {
-        return this.sum() / this.count();
-    };
+Array.prototype.any = function (qry) {
+    var results = typeof qry === 'undefined'
+        ? this
+        : this.where(qry);
 
-    //concat is already in ecma...
+    return results.length > 0;
+};
 
-    array.prototype.contains = function (value) {
-        return this.count(
-            function (item) {
-                return compare(item, value) === 0;
-            }) > 0;
-    };
+Array.prototype.average = function () {
+    return this.sum() / this.count();
+};
 
-    array.prototype.count = function (qry) {
-        var results = typeof qry === 'undefined'
-            ? this
-            : this.where(qry);
+//concat is already in ecma...
 
-        return results.length;
-    };
+Array.prototype.contains = function (value) {
+    return this.count(
+        function (item) {
+            return compare(item, value) === 0;
+        }) > 0;
+};
 
-    // Excluding DefaultIfEmpty
+Array.prototype.count = function (qry) {
+    var results = typeof qry === 'undefined'
+        ? this
+        : this.where(qry);
 
-    array.prototype.distinct = function () {
-        if (this.length < 1)
-            return this;
+    return results.length;
+};
 
-        var sortedResults = this.sort();
-        var results = [];
-        results.push(sortedResults[0]);
-        for (var i = 0, j = 1, len = sortedResults.length; j < len; i++, j++) {
-            var prev = sortedResults[i];
-            var curr = sortedResults[j];
+// Excluding DefaultIfEmpty
 
-            if (compare(curr, prev) !== 0)
-                results.push(curr);
-        }
+Array.prototype.distinct = function () {
+    if (this.length < 1)
+        return this;
 
-        return results;
-    };
+    var sortedResults = this.sort(compare);
+    var results = [];
+    results.push(sortedResults[0]);
+    for (var i = 0, j = 1, len = sortedResults.length; j < len; i++, j++) {
+        var prev = sortedResults[i];
+        var curr = sortedResults[j];
 
-    array.prototype.elementAt = function (index) {
-        if (this.length === 0 || index < 0 || (index - 1) > this.length)
-            throw "No Results Found";
+        if (compare(curr, prev) !== 0)
+            results.push(curr);
+    }
 
-        return this[index];
-    };
+    return results;
+};
 
-    array.prototype.elementAtOrDefault = function (index) {
-        if (this.length === 0 || index < 0 || (index - 1) > this.length)
-            return null;
+Array.prototype.elementAt = function (index) {
+    var result = this.elementAtOrDefault(index);
 
-        return this[index];
-    };
+    if (result === null)
+        throw "No Results Found";
 
-    // Excluding Empty
+    return result;
+};
 
-    array.prototype.except = function (array) {
-        if (this.length === 0 || array.length === 0)
-            return this;
+Array.prototype.elementAtOrDefault = function (index) {
+    if (this.length === 0 || index < 0 || (index - 1) > this.length)
+        return null;
 
-        var results = [];
-        for (var i = 0, len = this.length; i < len; i++) {
-            if (array.contains(this[i]))
-                continue;
+    return this[index];
+};
 
-            results.push(this[i]);
-        }
+// Excluding Empty
 
-        return results.distinct();
-    };
+Array.prototype.except = function (array) {
+    if (this.length === 0 || array.length === 0)
+        return this;
 
-    array.prototype.first = function (qry) {
-        var result = this.firstOrDefault(qry);
+    var results = [];
+    for (var i = 0, len = this.length; i < len; i++) {
+        if (array.contains(this[i]))
+            continue;
 
-        if (result === null)
-            throw "No Results Found";
+        results.push(this[i]);
+    }
 
-        return result;
-    };
+    return results;
+};
 
-    array.prototype.firstOrDefault = function (qry) {
-        var results = typeof qry === 'undefined'
-            ? this
-            : this.where(qry);
+Array.prototype.first = function (qry) {
+    var result = this.firstOrDefault(qry);
 
-        return results.length > 0
-            ? results[0]
-            : null;
-    };
+    if (result === null)
+        throw "No Results Found";
 
-    array.prototype.groupBy = function (exp) {
-        var compiled = compileExp(exp);
-        var keys = this.select(compiled).distinct();
-        var results = [];
+    return result;
+};
 
-        for (var i = 0, len = keys.length; i < len; i++)
-            results.push({
-                key: keys[i],
-                value: this.where(function (item) {
-                    return compiled(item) === keys[i];
-                })
-            });
+Array.prototype.firstOrDefault = function (qry) {
+    var results = typeof qry === 'undefined'
+        ? this
+        : this.where(qry);
 
-        return results;
-    };
+    return results.length > 0
+        ? results[0]
+        : null;
+};
 
-    array.prototype.groupJoin = function (inner, outerKey, innerKey, zipFn) {
-        var iKey = compileExp(innerKey);
-        var oKey = compileExp(outerKey);
-        var results = [];
+Array.prototype.groupBy = function (exp, keyName, valName) {
+    var compiled = compileExp(exp);
+    var keys = this.select(compiled).distinct();
+    var results = [];
 
-        for (var i = 0, len = this.length; i < len; i++) {
-            var matches = inner.where(function (item) {
-                return compare(oKey(this[i]), iKey(item)) === 0;
-            });
-
-            results.push(matches);
-        }
-
-        return this.zip(results, zipFn);
-    };
-
-    // Same as join from microsoft documentation, however join already exists in ecma and is more of a concat...
-    array.prototype.innerJoin = function (inner, outerKey, innerKey, zipFn) {
-        var iKey = compileExp(innerKey);
-        var oKey = compileExp(outerKey);
-        var results = [];
-
-        for (var i = 0; i < this.length; i++) {
-            var outerItem = this[i];
-            var matches = inner.where(function (item) {
-                return compare(oKey(outerItem), iKey(item)) === 0;
-            });
-
-            for (var x = 0; x < matches.length; x++)
-                results.push(matches[x]);
-        }
-
-        return this.zip(results, zipFn);
-    };
-
-    array.prototype.intersect = function (array) {
-        if (this.length === 0 || array.length === 0)
-            return [];
-
-        var results = [];
-        for (var i = 0; i < array.length; i++)
-            for (var j = 0; j < this.length; j++)
-                if (compare(this[j], array[i]) === 0)
-                    results.push(this[j]);
-
-        return results.distinct();
-    };
-
-    array.prototype.last = function (qry) {
-        var result = this.lastOrDefault(qry);
-
-        if (result === null)
-            throw "No Results Found";
-
-        return result;
-    };
-
-    array.prototype.lastOrDefault = function (qry) {
-        var results = typeof qry === 'undefined'
-            ? this
-            : this.where(qry);
-
-        return results.length > 0
-            ? results[results.length - 1]
-            : null;
-    };
-
-    // Excluding LongCount
-
-    array.prototype.max = function (qry) {
-        var results = this.select(qry);
-        return Math.max.apply(null, results);
-    };
-
-    array.prototype.min = function (qry) {
-        var results = this.select(qry);
-        return Math.min.apply(null, results);
-    };
-
-    // Excluding OfType
-
-    array.prototype.orderBy = function (qry) {
-        if (typeof qry === 'undefined')
-            return this.sort();
-
-        var compiled = compileExp(qry);
-
-        return this.sort(function (a, b) {
-            return compare(compiled(a), compiled(b));
+    for (var i = 0, len = keys.length; i < len; i++) {
+        var obj = {};
+        obj[keyName || 'key'] = keys[i];
+        obj[valName || 'value'] = this.where(function (item) {
+            return compiled(item) === keys[i];
         });
-    };
 
-    array.prototype.orderByDescending = function (qry) {
-        if (typeof qry === 'undefined')
-            return this.sort().reverse();
+        results.push(obj);
+    }
 
-        return this.orderBy(qry).reverse();
-    };
+    return results;
+};
 
-    // Excluding Range
+Array.prototype.groupJoin = function (inner, outerKey, innerKey, zipFn) {
+    var iKey = compileExp(innerKey);
+    var oKey = compileExp(outerKey);
+    var results = [];
 
-    // Excluding Repeat
+    for (var i = 0, len = this.length; i < len; i++) {
+        var outerItem = this[i];
+        var matches = inner.where(function (item) {
+            return compare(oKey(outerItem, item), iKey(item, outerItem)) === 0;
+        });
 
-    // Reverse already a part of ecma.
+        results.push(matches);
+    }
 
-    array.prototype.select = function (qry) {
-        if (typeof qry === 'undefined')
-            return this;
+    return this.zip(results, zipFn);
+};
 
-        var compiled = compileExp(qry);
-        var results = [];
+// Same as join from microsoft documentation, however join already exists in ecma and is more of a concat...
+Array.prototype.innerJoin = function (inner, outerKey, innerKey, zipFn) {
+    var iKey = compileExp(innerKey);
+    var oKey = compileExp(outerKey);
+    var results = [];
 
-        for (var i = 0, len = this.length; i < len; i++)
-            results.push(compiled(this[i]));
+    for (var i = 0; i < this.length; i++) {
+        var outerItem = this[i];
+        var matches = inner.where(function (item) {
+            return compare(oKey(outerItem), iKey(item)) === 0;
+        });
 
-        return results;
-    };
+        results.splice.apply(results, [results.length, 0].concat(matches));
+    }
 
-    array.prototype.selectMany = function (qry) {
-        if (typeof qry === 'undefined')
-            return this;
+    return this.zip(results, zipFn);
+};
 
-        var results = this.select(qry);
-        var array = [];
-        for (var i = 0, len = results.length; i < len; i++)
-            array = array.union(results[i]);
+Array.prototype.intersect = function (array) {
+    if (this.length === 0 || array.length === 0)
+        return [];
 
-        return array;
-    };
+    var results = [];
+    for (var i = 0; i < array.length; i++)
+        for (var j = 0; j < this.length; j++)
+            if (compare(this[j], array[i]) === 0)
+                results.push(this[j]);
 
-    array.prototype.sequenceEqual = function (array) {
-        if (typeof array === 'undefined' || array === null)
+    return results;
+};
+
+Array.prototype.last = function (qry) {
+    var result = this.lastOrDefault(qry);
+
+    if (result === null)
+        throw "No Results Found";
+
+    return result;
+};
+
+Array.prototype.lastOrDefault = function (qry) {
+    var results = typeof qry === 'undefined'
+        ? this
+        : this.where(qry);
+
+    return results.pop() || null;
+};
+
+// Excluding LongCount
+
+Array.prototype.max = function (qry) {
+    var results = this.select(qry);
+    return Math.max.apply(null, results);
+};
+
+Array.prototype.min = function (qry) {
+    var results = this.select(qry);
+    return Math.min.apply(null, results);
+};
+
+// Excluding OfType
+
+Array.prototype.orderBy = function (qry) {
+    if (typeof qry === 'undefined')
+        return this.sort(compare);
+
+    var compiled = compileExp(qry);
+
+    return this.sort(function (a, b) {
+        return compare(compiled(a), compiled(b));
+    });
+};
+
+Array.prototype.orderByDescending = function (qry) {
+    return this.orderBy(qry).reverse();
+};
+
+// Excluding Range
+// Excluding Repeat
+// Reverse already a part of ecma.
+
+Array.prototype.select = function (qry) {
+    if (typeof qry === 'undefined')
+        return this;
+
+    var compiled = compileExp(qry);
+    var results = [];
+
+    for (var i = 0, len = this.length; i < len; i++)
+        results.push(compiled(this[i]));
+
+    return results;
+};
+
+Array.prototype.selectMany = function (qry) {
+    if (typeof qry === 'undefined')
+        return this;
+
+    var results = this.select(qry);
+    var array = [];
+
+    for (var i = 0, len = results.length; i < len; i++)
+        array.splice.apply(array, [array.length, 0].concat(results[i]));
+
+    return array;
+};
+
+Array.prototype.sequenceEqual = function (array) {
+    if (typeof array === 'undefined' || array === null)
+        return false;
+
+    if (this.length !== array.length)
+        return false;
+
+    for (var i = 0, len = this.length; i < len; i++)
+        if (compare(this[i], array[i]) !== 0)
             return false;
 
-        if (this.length !== array.length)
-            return false;
+    return true;
+};
 
-        for (var i = 0, len = this.length; i < len; i++)
-            if (compare(this[i], array[i]) !== 0)
-                return false;
+Array.prototype.single = function () {
+    if (this.length !== 1)
+        throw "Sequence does not contain a single element.";
 
-        return true;
-    };
+    return this[0];
+};
 
-    array.prototype.single = function () {
-        if (this.length !== 1)
-            throw "Sequence does not contain a single element.";
+Array.prototype.singleOrDefault = function () {
+    if (this.length > 1)
+        throw "Sequence does not contain a single element.";
 
-        return this[0];
-    };
+    return this.length === 1
+        ? this[0]
+        : null;
+};
 
-    array.prototype.singleOrDefault = function () {
-        if (this.length > 1)
-            throw "Sequence does not contain a single element.";
+Array.prototype.skip = function (index) {
+    return this.slice(index, this.length);
+};
 
-        return this.length === 1
-            ? this[0]
-            : null;
-    };
+Array.prototype.skipWhile = function (qry) {
+    var compiled = compileExp(qry);
+    var results = [];
 
-    array.prototype.skip = function (index) {
-        return this.slice(index, this.length);
-    };
+    for (var i = 0, len = this.length; i < len; i++)
+        if (compiled(this[i]) !== true)
+            results.push(this[i]);
 
-    array.prototype.skipWhile = function (qry) {
-        var compiled = compileExp(qry);
-        var results = [];
+    return results;
+};
 
-        for (var i = 0, len = this.length; i < len; i++)
-            if (compiled(this[i]) !== true)
-                results.push(this[i]);
+Array.prototype.sum = function () {
+    if (this.length === 0)
+        return 0;
 
-        return results;
-    };
+    var isInt = function(val) { return parseInt(val) === parseFloat(val); };
 
-    array.prototype.sum = function () {
-        if (this.length === 0)
-            return 0;
+    var sum = 0;
+    for (var i = 0, len = this.length; i < len; i++){
+        var val = this[i];
+        if (isNaN(val))
+            val = 0;
 
-        var sum = 0;
-        for (var i = 0, len = this.length; i < len; i++)
-            sum += this[i];
-        return sum;
-    };
+        var cur = ((isInt(val))
+            ? parseInt(val)
+            : parseFloat(val));
+        sum += cur;
+    }
 
-    array.prototype.take = function (count) {
-        return this.slice(0, count);
-    };
+    return sum;
+};
 
-    array.prototype.takeWhile = function (qry) {
-        var compiled = compileExp(qry);
-        var results = [];
+Array.prototype.take = function (count) {
+    return this.slice(0, count);
+};
 
-        for (var i = 0, len = this.length; i < len; i++) {
-            var item = this[i];
-            if (compiled(item) !== true)
-                return results;
+Array.prototype.takeWhile = function (qry) {
+    var compiled = compileExp(qry);
+    var results = [];
 
-            results.push(item);
-        }
+    for (var i = 0, len = this.length; i < len; i++) {
+        var item = this[i];
+        if (compiled(item) !== true)
+            return results;
 
-        return results;
-    };
+        results.push(item);
+    }
 
-    // Excluding ThenBy
-    // Excluding ThenByDescending
-    // Excluding ToArray ... lol
-    // Excluding ToDictionary
-    // Excluding ToList
-    // Excluding ToLookup
+    return results;
+};
 
-    array.prototype.union = function (array) {
-        if (typeof array === 'undefined' || array === null)
-            return this;
+// Excluding ThenBy
+// Excluding ThenByDescending
+// Excluding ToArray ... lol
+// Excluding ToDictionary
+// Excluding ToList
+// Excluding ToLookup
 
-        return this.concat(array);
-    };
+Array.prototype.union = function (array) {
+    if (typeof array === 'undefined' || array === null)
+        return this;
 
-    array.prototype.where = function (qry) {
-        var compiled = compileExp(qry);
-        var results = [];
+    return this.concat(array);
+};
 
-        for (var i = 0, len = this.length; i < len; i++)
-            if (compiled(this[i]) === true)
-                results.push(this[i]);
+Array.prototype.where = function (qry) {
+    var compiled = compileExp(qry);
+    var results = [];
 
-        return results;
-    };
+    for (var i = 0, len = this.length; i < len; i++)
+        if (compiled(this[i]) === true)
+            results.push(this[i]);
 
-    array.prototype.zip = function (second, zipFn) {
-        var results = [];
+    return results;
+};
 
-        if (typeof zipFn !== 'function')
-            zipFn = compileExp(zipFn);
+Array.prototype.zip = function (second, zipFn) {
+    var results = [];
 
-        for (var i = 0, len = this.length; i < len; i++)
-            if (second.length > i)
-                results.push(zipFn(this[i], second[i]));
+    if (typeof zipFn !== 'function')
+        zipFn = compileExp(zipFn);
 
-        return results;
-    };
+    for (var i = 0, len = this.length; i < len; i++)
+        if (second.length > i)
+            results.push(zipFn(this[i], second[i]));
 
-    // Comparison and compilation expressions
+    return results;
+};
 
-    var compileExp = exports.compileExp = function (exp) {
-        if (typeof exp === 'undefined')
-            throw "Expression is invalid.";
 
-        if (typeof exp === 'function')
-            return exp;
+// Comparison and compilation expressions
 
-        var parts = exp.split('=>');
-        var arg = parts.length > 0 ? parts[0].trim().replace(/\(|\)/g, '') : null;
-        var func = parts.length > 1 ? parts[1].trim() : null;
+var compileExp = function (exp) {
+    if (typeof exp === 'undefined' || typeof exp === 'number' || typeof exp === 'object')
+        throw "Expression is invalid.";
 
-        if (arg === null || func === null)
-            throw "Expression is invalid.";
+    if (typeof exp === 'function')
+        return exp;
 
-        return new Function(arg, 'return (' + func + ');');
-    };
+    var parts = exp.split('=>');
+    var arg = parts.length > 0 ? parts.shift().trim().replace(/\(|\)/g, '') : null;
+    var func = parts.length > 0 ? parts.join('=>').trim() : null;
 
-    var compare = exports.compare = function (obj1, obj2) {
-        if (typeof obj1 === 'undefined' || typeof obj2 === 'undefined')
-            return typeof obj1 === 'undefined' ? -1 : (typeof obj2 === 'undefined' ? 1 : 0);
+    if (arg === null || func === null)
+        throw "Expression is invalid.";
 
-        if (typeof obj1 !== typeof obj2)
-            throw "Both objects must be of the same type";
+    return new Function(arg, 'return (' + func + ');');
+};
 
-        if (obj1.compare)
-            return obj1.compare(obj2);
+var compare = function (obj1, obj2) {
+    if (typeof obj1 === 'undefined' || typeof obj2 === 'undefined')
+        return typeof obj1 === 'undefined' ? -1 : (typeof obj2 === 'undefined' ? 1 : 0);
 
-        if (typeof obj1 === 'string') {
-            var hash1 = obj1.hashCode();
-            var hash2 = obj2.hashCode();
+    if (typeof obj1 !== typeof obj2){
+        throw "Both objects must be of the same type";
+    }
 
-            return hash1 < hash2 ? -1 : (hash1 > hash2 ? 1 : 0);
-        }
+    if (obj1 === null || obj2 === null)
+        return obj1 === obj2 ? 0 : (obj1 === null ? 1 : -1);
 
-        if (typeof obj1 === 'number')
-            return obj1 < obj2 ? -1 : (obj1 > obj2 ? 1 : 0);
+    if (obj1.compare)
+        return obj1.compare(obj2);
 
-        if (typeof obj1 === 'boolean')
-            return obj1 === obj2 ? 0 : (obj1 ? 1 : -1);
+    if (typeof obj1 === 'string') {
+        return obj1 > obj2 ? 1 : (obj1 < obj2 ? -1 : 0);
+    }
 
-        if (typeof obj1 === 'function') {
-            var val1 = obj1();
-            var val2 = obj2();
+    if (typeof obj1 === 'number')
+        return obj1 < obj2 ? -1 : (obj1 > obj2 ? 1 : 0);
 
-            return compare(val1, val2);
-        }
+    if (typeof obj1 === 'boolean')
+        return obj1 === obj2 ? 0 : (obj1 ? 1 : -1);
 
-        if (typeof obj1 === 'object') {
-            var result = 0;
-            for (var key in obj1) {
-                var temp = compare(obj1[key], obj2[key]);
-                if (temp === -1) return temp;
-                result = Math.max(result, temp);
+    if (typeof obj1 === 'function') {
+        var val1 = obj1();
+        var val2 = obj2();
+
+        return compare(val1, val2);
+    }
+
+    var enumerator = function(obj, fn) {
+        if (Array.isArray(obj)) {
+            for(var i = 0, len = obj.length; i < len; i++) {
+                if (fn(obj[i], i) === false) return;
             }
-            return result;
+        } else {
+            for(var key in obj) {
+                if (fn(obj[key], key) === false) return;
+            }
         }
-
-        throw "Unable to compare objects";
     };
-})(Array, String, (typeof module !== 'undefined' && module.exports) || window);
+
+    if (typeof obj1 === 'object') {
+        var result = [];
+
+        enumerator(obj1, function(val, key) {
+            var sort = compare(val, obj2[key]);
+            result.push(sort);
+
+            if (sort === -1) return false;
+        });
+
+        return result.reduce(function(prev,curr) {
+            if (prev === curr) return prev;
+            var sum = prev+curr;
+            return sum === 0 ? -1 : sum;
+        });
+    }
+
+    throw "Unable to compare objects";
+};
