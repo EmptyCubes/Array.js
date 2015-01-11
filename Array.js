@@ -447,6 +447,10 @@ var compare = function (obj1, obj2) {
 
         return compare(val1, val2);
     }
+	
+    if (obj1 instanceof Date) {
+        return obj1 > obj2 ? 1 : (obj1 < obj2 ? -1 : 0);
+    }
 
     var enumerator = function(obj, fn) {
         if (Array.isArray(obj)) {
