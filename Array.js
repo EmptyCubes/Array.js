@@ -370,7 +370,8 @@ Array.prototype.union = function (array) {
     if (typeof array === 'undefined' || array === null)
         return this;
 
-    return this.concat(array);
+    return this.concat(array)
+               .distinct();
 };
 
 Array.prototype.where = function (qry) {
