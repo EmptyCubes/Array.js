@@ -1,0 +1,25 @@
+{
+  "name": "Arrayjs",
+  "main": "Array.js",
+  "version": "1.1.3",
+  "homepage": "https://github.com/EmptyCubes/Array.js",
+  "authors": [
+    "Jack Godwin <godwhj@gmail.com>"
+  ],
+  "description": "IEnumerible for javascript arrays",
+  "keywords": [
+    "array",
+    "linq",
+    "filter",
+    "query",
+    "typescript"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

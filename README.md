@@ -15,7 +15,7 @@ IEnumerable for javascript Array
    // Enjoy :)
    var query = 
       source.where('m=>m.Id > 3 &amp;&amp; m.Id &lt; 6')
-            .orderByDesc('m=>m.Name');
+            .orderByDescending('m=>m.Name');
             
 </pre>
 

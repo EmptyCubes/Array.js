@@ -1,13 +1,13 @@
-﻿
-<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>Array Extensions Demo</title>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-    <script src="Array.js"></script>
+    <script src="./Array.js"></script>
 </head>
     <body>
         <script type="text/javascript">
-            $(document).ready(function () {
+            var ready = function () {
                 var output = $('#output');
                 var source = [{ Id: 1, Name: 'Item 1' },
                     { Id: 2, Name: 'Item 2' },
@@ -42,14 +42,8 @@
                     { Id: 10, Name: 'Item 10' },
                     { Id: 10, Name: 'Item 10' }];
 
-                var numbers = [1, 2, 3, 4];
-                var words = ["one", "two", "three"];
-                var sentence = "the quick brown fox jumps over the lazy dog";
-                var sentence1 = "the quick brown fox jumps over the lazy dog";
-                var sentence2 = "the quick brown fox";
-
                 //
-                //Where & OrderByDescending
+                //Where & OrderByDesc
                 //
 
                 var query =
@@ -57,9 +51,9 @@
                         .orderByDescending('m=>m.Name');
 
 
-                output.append('<b>Where & OrderByDescending</b>');
+                output.append('<b>Where & OrderByDesc</b>');
                 output.append("<br />");
-                $.each(query, function (i, o) {
+                query.forEach(function (o) {
                     output.append("Id = " + o.Id + ", Name = " + o.Name);
                     output.append("<br />");
                 });
@@ -112,7 +106,7 @@
                 output.append("<br />");
                 output.append('<b>Skip & Take</b>');
                 output.append("<br />");
-                $.each(query, function (i, o) {
+                query.forEach(function (o) {
                     output.append("Id = " + o.Id + ", Name = " + o.Name);
                     output.append("<br />");
                 });
@@ -141,18 +135,6 @@
                 output.append("<br />");
 
                 //
-                //All
-                //
-
-                output.append("<br />");
-                output.append('<b>All</b>');
-                output.append("<br />");
-                output.append('m=>m.Id > 4 = ' + source.all('m=>m.Id > 4'));
-                output.append("<br />");
-                output.append('m=>m.Id > 0 = ' + source.all('m=>m.Id > 0'));
-                output.append("<br />");
-
-                //
                 //Select
                 //
 
@@ -161,7 +143,7 @@
                 output.append("<br />");
                 output.append('<b>Select</b>');
                 output.append("<br />");
-                $.each(query, function (i, o) {
+                query.forEach(function (o) {
                     output.append(o.join());
                     output.append("<br />");
                 });
@@ -176,7 +158,7 @@
                 output.append("<br />");
                 output.append('<b>Select Many</b>');
                 output.append("<br />");
-                $.each(query, function (i, o) {
+                query.forEach(function (o) {
                     output.append(o);
                     output.append("<br />");
                 });
@@ -191,7 +173,7 @@
                 output.append("<br />");
                 output.append('<b>Union</b>');
                 output.append("<br />");
-                $.each(query, function (i, o) {
+                query.forEach(function (o) {
                     output.append("Id = " + o.Id + ", Name = " + o.Name);
                     output.append("<br />");
                 });
@@ -206,7 +188,7 @@
                 output.append("<br />");
                 output.append('<b>Reverse</b>');
                 output.append("<br />");
-                $.each(query, function (i, o) {
+                query.forEach(function (o) {
                     output.append("Id = " + o.Id + ", Name = " + o.Name);
                     output.append("<br />");
                 });
@@ -245,26 +227,28 @@
                 output.append("<br />");
                 output.append('<b>Distinct</b>');
                 output.append("<br />");
-                $.each(query, function (i, o) {
+                query.forEach(function (o) {
                     output.append("Id = " + o.Id + ", Name = " + o.Name);
                     output.append("<br />");
                 });
 
-                //
+				//
                 //Zip
                 //
 
+                var numbers = [ 1, 2, 3, 4 ];
+                var words = [ "one", "two", "three" ];
                 var numbersAndWords = numbers.zip(words, '(first, second) => first + " " + second');
 
                 output.append("<br />");
                 output.append('<b>Zip</b>');
                 output.append("<br />");
-                $.each(numbersAndWords, function (i, o) {
+                numbersAndWords.forEach(function (o) {
                     output.append(o);
                     output.append("<br />");
                 });
 
-                //
+				//
                 //InnerJoin
                 //
 
@@ -273,75 +257,13 @@
                 output.append("<br />");
                 output.append('<b>InnerJoin</b>');
                 output.append("<br />");
-                $.each(joined, function (i, o) {
+                joined.forEach(function (o) {
                     output.append(o);
                     output.append("<br />");
                 });
+            };
 
-                //
-                //Aggregate
-                //
-
-                // Split the string into individual words. 
-                words = sentence.split(' ');
-
-                var aggregate = words.aggregate('(workingSentence, next) => next  + " " + workingSentence');
-
-                output.append("<br />");
-                output.append('<b>Aggregate</b>');
-                output.append("<br />");
-                output.append(aggregate);
-                output.append("<br />");
-
-                //
-                //Except
-                //
-
-                // Split the string into individual words. 
-                var words1 = sentence1.split(' ');
-                var words2 = sentence2.split(' ');
-
-                var except = words1.except(words2);
-
-                output.append("<br />");
-                output.append('<b>Except</b>');
-                output.append("<br />");
-                $.each(except, function (i, o) {
-                    output.append(o);
-                    output.append("<br />");
-                });
-                output.append("<br />");
-
-                //
-                //Intersect
-                //
-
-                var intersect = words1.intersect(words2);
-
-                output.append("<br />");
-                output.append('<b>Inersect</b>');
-                output.append("<br />");
-                $.each(intersect, function (i, o) {
-                    output.append(o);
-                    output.append("<br />");
-                });
-                output.append("<br />");
-
-                //
-                //GroupBy
-                //
-
-                var groupBy = source.union(source).groupBy('m=>m.Id');
-
-                output.append("<br />");
-                output.append('<b>GroupBy</b>');
-                output.append("<br />");
-                $.each(groupBy, function (i, o) {
-                    output.append("key = " + o.key + ", value = " + JSON.stringify(o.value));
-                    output.append("<br />");
-                });
-                output.append("<br />");
-            });
+            $(document).ready(ready);
         </script>
         <h1>Hello Array.js World!... OMG!</h1>
         <div><br /></div>

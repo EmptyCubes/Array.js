@@ -1,30 +1,11 @@
 /************************
  * Provides IEnumerable for the js Array
- * 
+ *
  *
  * Authors: KodingSykosis & OhRyanOh
  * https://github.com/KodingSykosis
  * https://github.com/OhRyanOh
  ***/
-
-//From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/Trim
-if (!String.prototype.trim) {
-    String.prototype.trim = function () {
-        return this.replace(/^\s+|\s+$/g, '');
-    };
-}
-
-//From http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
-String.prototype.hashCode = function () {
-    var hash = 0, i, char;
-    if (this.length === 0) return hash;
-    for (i = 0, l = this.length; i < l; i++) {
-        char = this.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash |= 0; // Convert to 32bit integer
-    }
-    return hash;
-};
 
 // Array Linq like extensions where they make sense:
 // http://msdn.microsoft.com/en-us/library/system.linq.enumerable_methods(v=vs.110).aspx
@@ -33,10 +14,12 @@ Array.prototype.aggregate = function (func) {
     if (this.length === 0)
         return null;
 
-    func = compileExp(func);
-    var aggregateValue = this[0];
+    var aggregateValue = this[0],
+        func = compileExp(func);
+
     for (var i = 1, len = this.length; i < len; i++)
         aggregateValue = func(aggregateValue, this[i]);
+
     return aggregateValue;
 };
 
@@ -83,7 +66,7 @@ Array.prototype.distinct = function () {
     if (this.length < 1)
         return this;
 
-    var sortedResults = this.sort();
+    var sortedResults = this.sort(compare);
     var results = [];
     results.push(sortedResults[0]);
     for (var i = 0, j = 1, len = sortedResults.length; j < len; i++, j++) {
@@ -97,16 +80,13 @@ Array.prototype.distinct = function () {
     return results;
 };
 
-Array.prototype.each = function (func) {
-    for (var i = 0; i < this.length; i++)
-        func.call(Array.prototype.each.caller, this[i]);
-};
-
 Array.prototype.elementAt = function (index) {
-    if (this.length === 0 || index < 0 || (index - 1) > this.length)
+    var result = this.elementAtOrDefault(index);
+
+    if (result === null)
         throw "No Results Found";
 
-    return this[index];
+    return result;
 };
 
 Array.prototype.elementAtOrDefault = function (index) {
@@ -130,7 +110,7 @@ Array.prototype.except = function (array) {
         results.push(this[i]);
     }
 
-    return results.distinct();
+    return results;
 };
 
 Array.prototype.first = function (qry) {
@@ -152,18 +132,20 @@ Array.prototype.firstOrDefault = function (qry) {
         : null;
 };
 
-Array.prototype.groupBy = function (exp) {
+Array.prototype.groupBy = function (exp, keyName, valName) {
     var compiled = compileExp(exp);
     var keys = this.select(compiled).distinct();
     var results = [];
 
-    for (var i = 0, len = keys.length; i < len; i++)
-        results.push({
-            key: keys[i],
-            value: this.where(function (item) {
-                return compiled(item) === keys[i];
-            })
+    for (var i = 0, len = keys.length; i < len; i++) {
+        var obj = {};
+        obj[keyName || 'key'] = keys[i];
+        obj[valName || 'value'] = this.where(function (item) {
+            return compiled(item) === keys[i];
         });
+
+        results.push(obj);
+    }
 
     return results;
 };
@@ -174,8 +156,9 @@ Array.prototype.groupJoin = function (inner, outerKey, innerKey, zipFn) {
     var results = [];
 
     for (var i = 0, len = this.length; i < len; i++) {
+        var outerItem = this[i];
         var matches = inner.where(function (item) {
-            return compare(oKey(this[i]), iKey(item)) === 0;
+            return compare(oKey(outerItem, item), iKey(item, outerItem)) === 0;
         });
 
         results.push(matches);
@@ -196,8 +179,7 @@ Array.prototype.innerJoin = function (inner, outerKey, innerKey, zipFn) {
             return compare(oKey(outerItem), iKey(item)) === 0;
         });
 
-        for (var x = 0; x < matches.length; x++)
-            results.push(matches[x]);
+        results.splice.apply(results, [results.length, 0].concat(matches));
     }
 
     return this.zip(results, zipFn);
@@ -213,7 +195,7 @@ Array.prototype.intersect = function (array) {
             if (compare(this[j], array[i]) === 0)
                 results.push(this[j]);
 
-    return results.distinct();
+    return results;
 };
 
 Array.prototype.last = function (qry) {
@@ -230,9 +212,7 @@ Array.prototype.lastOrDefault = function (qry) {
         ? this
         : this.where(qry);
 
-    return results.length > 0
-        ? results[results.length - 1]
-        : null;
+    return results.pop() || null;
 };
 
 // Excluding LongCount
@@ -251,7 +231,7 @@ Array.prototype.min = function (qry) {
 
 Array.prototype.orderBy = function (qry) {
     if (typeof qry === 'undefined')
-        return this.sort();
+        return this.sort(compare);
 
     var compiled = compileExp(qry);
 
@@ -261,16 +241,11 @@ Array.prototype.orderBy = function (qry) {
 };
 
 Array.prototype.orderByDescending = function (qry) {
-    if (typeof qry === 'undefined')
-        return this.sort().reverse();
-
     return this.orderBy(qry).reverse();
 };
 
 // Excluding Range
-
 // Excluding Repeat
-
 // Reverse already a part of ecma.
 
 Array.prototype.select = function (qry) {
@@ -292,8 +267,9 @@ Array.prototype.selectMany = function (qry) {
 
     var results = this.select(qry);
     var array = [];
+
     for (var i = 0, len = results.length; i < len; i++)
-        array = array.union(results[i]);
+        array.splice.apply(array, [array.length, 0].concat(results[i]));
 
     return array;
 };
@@ -347,9 +323,20 @@ Array.prototype.sum = function () {
     if (this.length === 0)
         return 0;
 
+    var isInt = function(val) { return parseInt(val) === parseFloat(val); };
+
     var sum = 0;
-    for (var i = 0, len = this.length; i < len; i++)
-        sum += this[i];
+    for (var i = 0, len = this.length; i < len; i++){
+        var val = this[i];
+        if (isNaN(val))
+            val = 0;
+
+        var cur = ((isInt(val))
+            ? parseInt(val)
+            : parseFloat(val));
+        sum += cur;
+    }
+
     return sum;
 };
 
@@ -383,7 +370,8 @@ Array.prototype.union = function (array) {
     if (typeof array === 'undefined' || array === null)
         return this;
 
-    return this.concat(array).distinct();
+    return this.concat(array)
+               .distinct();
 };
 
 Array.prototype.where = function (qry) {
@@ -410,18 +398,19 @@ Array.prototype.zip = function (second, zipFn) {
     return results;
 };
 
+
 // Comparison and compilation expressions
 
-compileExp = function (exp) {
-    if (typeof exp === 'undefined')
+var compileExp = function (exp) {
+    if (typeof exp === 'undefined' || typeof exp === 'number' || typeof exp === 'object')
         throw "Expression is invalid.";
 
     if (typeof exp === 'function')
         return exp;
 
     var parts = exp.split('=>');
-    var arg = parts.length > 0 ? parts[0].trim().replace(/\(|\)/g, '') : null;
-    var func = parts.length > 1 ? parts[1].trim() : null;
+    var arg = parts.length > 0 ? parts.shift().trim().replace(/\(|\)/g, '') : null;
+    var func = parts.length > 0 ? parts.join('=>').trim() : null;
 
     if (arg === null || func === null)
         throw "Expression is invalid.";
@@ -429,21 +418,22 @@ compileExp = function (exp) {
     return new Function(arg, 'return (' + func + ');');
 };
 
-compare = function (obj1, obj2) {
+var compare = function (obj1, obj2) {
     if (typeof obj1 === 'undefined' || typeof obj2 === 'undefined')
         return typeof obj1 === 'undefined' ? -1 : (typeof obj2 === 'undefined' ? 1 : 0);
 
-    if (typeof obj1 !== typeof obj2)
+    if (typeof obj1 !== typeof obj2){
         throw "Both objects must be of the same type";
+    }
+
+    if (obj1 === null || obj2 === null)
+        return obj1 === obj2 ? 0 : (obj1 === null ? 1 : -1);
 
     if (obj1.compare)
         return obj1.compare(obj2);
 
     if (typeof obj1 === 'string') {
-        var hash1 = obj1.hashCode();
-        var hash2 = obj2.hashCode();
-
-        return hash1 < hash2 ? -1 : (hash1 > hash2 ? 1 : 0);
+        return obj1 > obj2 ? 1 : (obj1 < obj2 ? -1 : 0);
     }
 
     if (typeof obj1 === 'number')
@@ -458,15 +448,38 @@ compare = function (obj1, obj2) {
 
         return compare(val1, val2);
     }
+	
+    if (obj1 instanceof Date) {
+        return obj1 > obj2 ? 1 : (obj1 < obj2 ? -1 : 0);
+    }
+
+    var enumerator = function(obj, fn) {
+        if (Array.isArray(obj)) {
+            for(var i = 0, len = obj.length; i < len; i++) {
+                if (fn(obj[i], i) === false) return;
+            }
+        } else {
+            for(var key in obj) {
+                if (fn(obj[key], key) === false) return;
+            }
+        }
+    };
 
     if (typeof obj1 === 'object') {
-        var result = 0;
-        for (key in obj1) {
-            var temp = compare(obj1[key], obj2[key]);
-            if (temp === -1) return temp;
-            result = Math.max(result, temp);
-        }
-        return result;
+        var result = [];
+
+        enumerator(obj1, function(val, key) {
+            var sort = compare(val, obj2[key]);
+            result.push(sort);
+
+            if (sort === -1) return false;
+        });
+
+        return result.reduce(function(prev,curr) {
+            if (prev === curr) return prev;
+            var sum = prev+curr;
+            return sum === 0 ? -1 : sum;
+        });
     }
 
     throw "Unable to compare objects";
